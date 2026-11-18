@@ -1,71 +1,4 @@
-"""
-budget_settings.py - the single source of truth for the user's budget plan.
 
-WHY THIS FILE EXISTS
-  Phase 2 hardcoded every number inside each screen. Phase 3 moves the
-  user's settings - monthly salary plus the three percentages - into this
-  one module so that:
-      * the Settings screen WRITES here (its Save button),
-      * the Dashboard READS here (salary card + budget cards),
-      * neither screen knows or cares where the values are stored.
-
-STORAGE (Phase 7)
-  Phase 3 kept these values in two module-level variables; Phase 7 moved
-  them into the `budget_settings` table through app/core/db.py. The swap
-  is deliberately invisible: every public function below kept its name,
-  its signature and its behaviour, so no screen changed. What the module
-  owns is now a single ROW (id = 1) rather than two variables, and the
-  bodies of get_*/set_*() are SQL instead of assignments.
-
-SEEDING - FIRST RUN ONLY, NEVER AGAIN
-  _ensure_row() writes the defaults (120,000 salary, 50/30/20) the first
-  time this module loads against a database with no settings row. Every
-  later launch finds the row already there and leaves it alone, so a
-  salary the user typed is never overwritten. It runs at import time,
-  which is before any screen can read or write.
-
-VALIDATION LIVES HERE TOO
-  set_salary(), set_percentages() and (since Phase 8.1)
-  set_month_start_day() refuse nonsense (negative numbers, percentages
-  that do not total exactly 100, a start day outside 1-28) by raising
-  ValueError. The Settings screen validates FIRST so the user sees a
-  friendly inline warning, but this guard means an invalid plan can
-  never be stored - even if a future screen forgets to check.
-
-SALARY CYCLES (Phase 8.1)
-  The user's month does not have to BE a calendar month: a setting says
-  which day of the month the salary cycle starts on (1-28), and section
-  6 turns that into the ONE place in the app that answers "which month
-  does this day belong to?". Everything that used to say "calendar
-  month" - the Reports "spent this month" figure, and whatever the
-  history feature builds later - asks these helpers instead, so no two
-  screens can disagree. A cycle is NAMED BY THE MONTH IT STARTS IN:
-  with start day 10, 5 December belongs to the cycle that began
-  10 November and is therefore called "November".
-
-PER-CYCLE SALARY (Phase 8.3 fix)
-  The Reports history shows what each past cycle SAVED, and that maths
-  is only right when it uses the salary that was in effect DURING that
-  cycle - not today's. So besides the single settings row there is now
-  a second, small table (cycle_salary in db.py): one row per cycle.
-  Recording is automatic and invisible to screens - set_salary() and
-  even a normal get_salary() upsert the CURRENT cycle (cycle_of()) as
-  a side effect, so a user who upgrades mid-cycle gets that cycle on
-  file the moment the Dashboard repaints, with no new user action.
-  Reading it back is get_salary_for_cycle(); cycles older than this
-  feature have no row and fall back to the current salary, and
-  has_salary_for_cycle() tells the two apart so the history footnote
-  can be honest about which figures are measured at today's rate.
-  reports.cycle_history() is the only reader; nothing else changed.
-
-CHANGE NOTIFICATION (how the Dashboard learns about new settings)
-  main.py must not be touched, so the Dashboard cannot be told directly
-  when the user presses Save. Instead screens may subscribe() a callback:
-  every successful set_*() call runs all subscribers. The Dashboard
-  subscribes its "reload every number" method, so it updates the moment
-  settings are saved - which trivially satisfies "reflect them when next
-  shown" (it is already fresh before it is shown again).
-"""
 
 import datetime as dt
 
@@ -78,7 +11,7 @@ from app.core import db
 DEFAULT_SALARY = 120_000          # monthly salary in rupees
 DEFAULT_PERCENTAGES = {"needs": 50, "wants": 30, "savings": 20}
 
-# Phase 8.1: the day each salary cycle begins. 1 = calendar months, so a
+# the day each salary cycle begins. 1 = calendar months, so a
 # user who never touches the setting gets exactly the behaviour the app
 # had before this phase. The cap is 28 (not 31) on purpose: every month
 # has a 28th, so one setting works for all twelve - a 29/30/31 start
@@ -171,7 +104,7 @@ def _ensure_row() -> None:
 
 
 def _record_cycle_salary(cycle_key: str, salary: int) -> None:
-    """Put `salary` on file for the cycle named `cycle_key` (8.3 FIX).
+    """Put `salary` on file for the cycle named `cycle_key`.
 
     THE ONE WRITER of the cycle_salary table - every other function in
     the app only reads it, and no screen knows it exists. An UPSERT:
@@ -283,7 +216,7 @@ def set_salary(amount: int) -> None:
 def get_salary_for_cycle(cycle_key: str) -> int:
     """The salary that was in effect during the cycle `cycle_key`.
 
-    Phase 8.3 fix - the reader reports.cycle_history() uses so each
+    the reader reports.cycle_history() uses so each
     past cycle's saving is measured against ITS OWN salary instead of
     today's. Returns the figure in the cycle_salary table for that key.
 
@@ -306,7 +239,7 @@ def get_salary_for_cycle(cycle_key: str) -> int:
 
 
 def has_salary_for_cycle(cycle_key: str) -> bool:
-    """True when `cycle_key`'s salary is genuinely ON FILE (8.3 fix).
+    """True when `cycle_key`'s salary is genuinely ON FILE.
 
     The honest companion to get_salary_for_cycle(): that function
     always returns a usable figure (falling back to today's salary),
