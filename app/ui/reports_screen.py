@@ -1,101 +1,3 @@
-"""
-reports_screen.py - the Reports screen (Phase 8).
-
-WHAT THIS SCREEN DOES
-  Four charts plus four text statistics, all built from what the user
-  has ALREADY logged:
-
-    split        donut  - spending split across Needs / Wants / Savings
-    categories   bars   - spending by category (pick a budget, or "All")
-    comparison   bars   - allocated vs planned vs spent, per budget
-    compare      bars   - Phase 8.4: two finished cycles side by side,
-                          three budget bars each, with each cycle's
-                          spent/saved figures above its group
-    statistics          - top category, spent this salary cycle, total
-                          spent, remaining - plus, since Phase 8.3, the
-                          cycle's exact date range under its month name
-    history              - Phase 8.3: finished salary cycles, newest
-                          first, each with what was spent and what was
-                          saved (the third tab, plain widgets - no chart)
-
-READ-ONLY
-  This screen writes nothing. It calls app/services/reports.py, which
-  only ever calls the four holders' READERS, so opening Reports cannot
-  change a single rupee of the user's data.
-
-WHERE THE NUMBERS COME FROM
-  Every figure is aggregated in app/services/reports.py - this file
-  contains presentation and NOTHING else. If a number looks wrong, the
-  bug is in reports.py; if it looks ugly, the bug is in here. That
-  split is the same one the rest of the app keeps.
-
-THEMATING - the tricky part of this phase
-  matplotlib ships with its own light, grey-on-white style, so every
-  element is painted by hand from app/core/theme.py in two places:
-
-    1. _apply_matplotlib_palette() pushes the ACTIVE palette into
-       matplotlib's rcParams (figure and axes background, frame, tick
-       and label colours, grid, legend). It runs at the top of every
-       single draw, so a figure can never be built with matplotlib's
-       own defaults left in it.
-    2. The artists whose colour varies with the DATA - the donut
-       wedges, the bars, the over/under notes - are given
-       theme.color(...) explicitly where they are created.
-
-  A theme flip therefore needs no special case: main.py calls
-  refresh_theme(), which recolours the CustomTkinter widgets AND
-  redraws all three figures, and step 1 above repaints them.
-
-  Budget identity: Needs/Wants/Savings always take their colour from
-  budget_settings.BUDGET_ACCENTS (info / warning / success) - the same
-  three keys the Dashboard's progress bars use - so a slice or a bar
-  means the same thing everywhere in the app.
-
-LAYOUT (why this screen is split across tabs)
-  Three charts stacked in one column never had enough HEIGHT: at
-  960x620 each one squeezed into a band the donut could not hold its
-  own centre label in. The screen is therefore laid out in two fixed
-  bands:
-
-    always visible   title, subtitle, statistics, the category filter
-    behind the tabs  the charts, one group per tab
-
-    row 0 title | 1 subtitle | 2 statistics | 3 filter | 4 tabview
-
-  The tabview owns row 4 (weight=1) so it - and only it - absorbs
-  whatever height the window has left. Inside it:
-
-    "Spending"       donut (left)  +  spending by category (right)
-    "Plan vs Actual" allocated vs spent, at full width
-    "History"        finished salary cycles in a scrollable list
-                     (Phase 8.3) - a list, not a chart, so it needs
-                     none of the matplotlib machinery
-
-  Each chart tab holds a single row of cards, so the charts now get the
-  whole band instead of a third of it - which is also what gives the
-  donut enough room for "Rs. 31,000 / spent" to sit inside the hole
-  with margin to spare. Nothing scrolls, because nothing overflows: at
-  most two cards share one row. The History tab is the exception and
-  scrolls on purpose - one record per finished cycle accumulates
-  forever.
-
-  The statistics and the filter deliberately stay ABOVE the tabs.
-  They summarise everything, not one tab's chart, and keeping them
-  out of the way of the tab swap means the screen's frame never
-  jumps when the user changes tab. The empty panel sits in row 4
-  too, so swapping to it cannot leave a dead weighted row behind.
-
-RESIZING
-  The figures are rebuilt at each chart box's CURRENT pixel size, and a
-  <Configure> binding on that box schedules a redraw 120 ms after the
-  last size change (so dragging the window edge does not redraw on
-  every intermediate frame).
-
-CONTRACT WITH main.py (identical to every other screen)
-  * every colour / font / spacing / radius comes from app.core.theme
-  * refresh_theme() re-applies the palette to EVERY widget created
-    here, so the sidebar's dark/light switch repaints this screen live
-"""
 
 from matplotlib import rcParams
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -919,16 +821,7 @@ class ReportsScreen(ctk.CTkFrame):
         for child in self._history_list.winfo_children():
             child.destroy()
 
-        # The footnote answers "which salary was this saving measured
-        # against?" - and since the 8.3 fix the honest answer depends on
-        # the LIST: every cycle the feature has lived through carries its
-        # own recorded salary, while cycles older than the feature fell
-        # back to today's. The per-record flag (reports.cycle_history()
-        # sets it from the cycle_salary table) tells the two apart, so
-        # the note only claims "your current salary" about the cycles
-        # where that is actually true. Both texts are restated on every
-        # reload, and refresh_theme() calls this too, so the wording
-        # can never go stale after a settings change or a flip.
+        
         rows = self._data["history"]
         salary = self._data["stats"]["salary"]
         # A record missing the flag counts as UNrecorded: if the two
@@ -1043,7 +936,7 @@ class ReportsScreen(ctk.CTkFrame):
             )
 
     def _apply_compare(self) -> None:
-        """Fill the Compare tab from self._data["history"] (Phase 8.4).
+        """Fill the Compare tab from self._data["history"].
 
         Restated on every reload AND from refresh_theme() - the same
         contract _apply_history() has - so a month rolling over, an
