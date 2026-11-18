@@ -1,80 +1,3 @@
-"""
-dashboard_screen.py - the Dashboard screen (Phase 3: real settings).
-
-WHAT CHANGED FROM PHASE 2
-  * Salary and the three allocated amounts are no longer hardcoded -
-    they are read from app/services/budget_settings.py, the shared
-    holder the Settings screen writes to (see _load_from_settings).
-  * The settings holder notifies us on save (subscribe), so new values
-    appear here without main.py having to do anything.
-  * The remaining balance number is colour-coded by how much of the
-    salary is left (green / amber / red - see _remaining_color_key).
-
-WHAT CHANGED IN PHASE 6 - the numbers are finally REAL (FIXED 2026-11-11)
-  * The Phase 2/3 SPENT placeholder dict is GONE. Every spent figure now
-    comes from daily_expenses.get_spent_by_budget() - the cascade, which
-    counts DAILY expenses only: a fixed expense is the monthly PLAN, and
-    a plan is never money spent (see daily_expenses.py and the plan
-    section of fixed_expenses.py).
-  * The salary card's remaining balance is
-    daily_expenses.get_remaining_balance() = salary - daily spending, so
-    logging a daily expense is the ONLY thing that moves it. Adding or
-    editing a fixed expense changes nothing on this screen - which is
-    exactly why the screen no longer subscribes to fixed_expenses.
-  * PHASE 8.2 (2026-11-17): those same three reads (spent, remaining,
-    over-budget) now count the CURRENT SALARY CYCLE only, so every
-    figure here resets when the cycle rolls over. NOT ONE LINE of this
-    screen changed for it - the window lives in daily_expenses, which
-    is the whole point of keeping the maths in the holder. Only these
-    comments were updated to say so.
-  * The colour-coded balance uses that same corrected remaining
-    (see _remaining_color_key / _load_from_settings).
-  * The screen subscribes to TWO holders, because two things can move a
-    number on this screen:
-        budget_settings - a new plan (as before),
-        daily_expenses  - logging / editing / deleting an expense.
-    Each holder only notifies its own subscribers, so each gets its own
-    subscribe() call. The dashboard never "listens" to anything else: it
-    just re-reads the holders whenever told to, which is why logging an
-    expense on another screen updates these cards while they are hidden.
-
-WHAT CHANGED IN PHASE 7 - over-budget cards warn (warning 3)
-  * When a budget's SPENT passes its ALLOCATION, its card now says so
-    out loud instead of quietly showing "208% used" in the normal
-    colour: the remaining figure, the percentage and the progress bar
-    all turn DANGER red, the bar caps at 100% (a bar cannot draw 208%)
-    while the percentage keeps the TRUE figure, and a short label
-    ("Over by Rs. 26,000") appears above the bar. Healthy cards are
-    untouched - this state is added ON TOP of the existing colour
-    logic, never instead of it (the salary card's green/amber/red
-    balance rules are unchanged).
-  * The comparison itself is not done here: daily_expenses.
-    get_over_budget() returns, per budget, allocated / spent / over /
-    over_by, and this screen only paints what it says (comparison
-    maths belongs in the holders).
-  * refresh_theme() re-reads the stored overrun (refs["over_by"]) so
-    the red state survives a dark/light flip - without that the flip
-    would repaint the card back to normal and the warning would
-    disappear until the next expense was logged.
-
-CONTRACT WITH main.py (unchanged since Phase 1)
-  * every colour / font / spacing / radius comes from app.core.theme
-  * refresh_theme() re-applies the whole palette to EVERY widget here,
-    so the sidebar's dark/light switch repaints the dashboard live
-  * layout uses grid weights, so the cards stretch when the window resizes
-
-WHAT THE SCREEN SHOWS (top to bottom)
-  1. Greeting header    - time-of-day greeting ("Good morning" before 12 PM,
-                          "Good afternoon" until 5 PM, "Good evening" after)
-                          plus a dated subtitle line
-  2. Salary card        - accent-coloured: salary + colour-coded balance
-  3. Three budget cards - Needs / Wants / Savings, each with allocated,
-                          spent, remaining and a progress bar - all REAL
-  4. Add Expense button - opens the Daily Expenses screen. main.py passes
-                          the callback (on_add_expense=...); building this
-                          screen WITHOUT one (as a test does) leaves the
-                          button harmless.
-"""
 
 import datetime as dt
 
@@ -402,7 +325,7 @@ class DashboardScreen(ctk.CTkFrame):
         pct_label.grid(row=5, column=0, columnspan=2, sticky="w", padx=pad)
 
         # Row 6: the over-budget warning line ("Over by Rs. 26,000").
-        # Phase 7 - created UNGRIDDED on purpose: _load_from_settings()
+        # Created UNGRIDDED on purpose: _load_from_settings()
         # grids it only when the budget is actually over, and forgets it
         # otherwise, so the common case pays no dead space for a label
         # that says nothing. Colours live in both paint paths (it turns
@@ -473,7 +396,7 @@ class DashboardScreen(ctk.CTkFrame):
 
         # -- salary card ---------------------------------------------------
         # REAL money: the cascade's top figure - salary minus this salary
-        # cycle's daily expenses (Phase 8.2 window; it used to subtract
+        # cycle's daily expenses ( it used to subtract
         # every expense ever logged). Fixed expenses never touch it; only
         # logging spending inside the current cycle can lower it (floored
         # at zero inside the holder; see daily_expenses.get_remaining_balance).
@@ -492,12 +415,12 @@ class DashboardScreen(ctk.CTkFrame):
 
         # -- budget cards --------------------------------------------------
         # Spent = daily expenses logged under this budget IN THE CURRENT
-        # SALARY CYCLE (Phase 8.2; plans never enter it), read from the
+        # SALARY CYCLE (plans never enter it), read from the
         # cascade helper - never accumulated here, so every card can only
         # ever agree with the ledger the other screens write to, and the
         # whole row resets with the cycle without this loop changing.
         spent_by_budget = daily_expenses.get_spent_by_budget()
-        # The over-budget COMPARISON also lives in a holder (Phase 7):
+        # The over-budget COMPARISON also lives in a holder:
         # get_over_budget() says, per budget, whether spent passed the
         # allocation and by how much. This loop only paints what it is
         # told - the numbers above and the arithmetic below are all
@@ -514,7 +437,7 @@ class DashboardScreen(ctk.CTkFrame):
             # Guard: a 0% budget divides by zero below.
             used = round(spent / allocated * 100) if allocated else 0
 
-            # Phase 7: the over-budget state. over_by is stored on the
+            # the over-budget state. over_by is stored on the
             # refs so refresh_theme() can re-apply the same red on a
             # dark/light flip (it repaints these three widgets too).
             over = over_by_budget[key]
@@ -657,7 +580,7 @@ class DashboardScreen(ctk.CTkFrame):
             refs["spent_caption"].configure(text_color=theme.color("text_secondary"))
             refs["spent_value"].configure(text_color=theme.color("text"))
             refs["remain_caption"].configure(text_color=theme.color("text_secondary"))
-            # Phase 7 - the over-budget (danger) state must survive a
+            # the over-budget (danger) state must survive a
             # theme flip too: _load_from_settings() stored the card's
             # overrun in refs["over_by"] (0 = healthy), and the SAME
             # three widgets it reddens - remaining figure, percentage,
