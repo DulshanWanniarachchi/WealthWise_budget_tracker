@@ -1,0 +1,19 @@
+# ---------------------------------------------------------------------------
+# Budget Tracker - Phase 1 dependencies
+# Install with:  pip install -r requirements.txt
+# The version is pinned so the future .exe build (PyInstaller) always uses
+# the exact same UI library that this code was written against.
+# ---------------------------------------------------------------------------
+customtkinter==6.0.0
+
+# ---------------------------------------------------------------------------
+# Phase 8 - Reports & Charts
+# matplotlib draws the three charts on the Reports screen; it is embedded
+# through matplotlib.backends.backend_tkagg.FigureCanvasTkAgg, which needs
+# no separate Tk binding of its own.
+# NOTE: matplotlib itself depends on Pillow and numpy - pip installs those
+# automatically as its requirements, so they are deliberately NOT listed
+# here (Pillow must stay out of this file: the screenshot tooling uses the
+# stdlib + System.Drawing path on purpose).
+# ---------------------------------------------------------------------------
+matplotlib==3.11.2

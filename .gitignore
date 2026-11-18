@@ -1,0 +1,24 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python compiled / cache files
+_pycache_/
+*.pyc
+*.pyo
+
+# The user's personal database - NEVER push (contains real financial data)
+data/budget.db
+data/*.db
+
+# PyInstaller build output
+build/
+dist/
+*.spec
+
+# IDE / OS clutter
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
