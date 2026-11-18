@@ -1,54 +1,9 @@
-"""
-categories_screen.py - the Categories screen (Phase 4).
-
-WHAT IT DOES
-  Lists the three budgets (Needs / Wants / Savings) with every category
-  under them, sub-items indented beneath their category, and lets the
-  user ADD, RENAME and DELETE both levels. Every action writes straight
-  into app.services.category_settings and applies immediately - there is
-  no Save button here, unlike Settings, which validates four fields as
-  one atomic plan before writing anything.
-
-WHY A SIDEBAR SCREEN INSTEAD OF A SECTION ON SETTINGS
-  Settings is an ATOMIC form: four fields are validated together, one
-  Save button, and invalid input blocks the write. Category management
-  is the opposite - independent one-row actions that apply the moment
-  you click, with a confirmation dialog in between. Folding it into
-  settings_screen.py would push that file (already ~490 lines) past a
-  thousand lines and would sit two different interaction models behind
-  one Save button. A separate screen keeps each file focused and lets
-  main.py's generic screen switching do the work. main.py was touched
-  ONLY to register this screen (import, nav item, screens dict, and the
-  sidebar row numbers that shift because of the third nav button).
-
-CONTRACT WITH main.py (identical to the Dashboard and Settings)
-  * every colour / font / spacing / radius comes from app.core.theme
-  * refresh_theme() repaints EVERY widget this screen creates. Rows are
-    rebuilt by _reload() using the active palette, so they cannot go
-    stale; only the static chrome is recoloured by hand below.
-
-HOW THE LIST IS BUILT
-  _reload() is the ONLY function that creates row widgets. It runs
-    (a) once at startup, from refresh_theme(),
-    (b) after every successful change - __init__ subscribes it to the
-        holder, and the holder notifies AFTER storing, and
-    (c) on every dark/light flip, through refresh_theme().
-  So action handlers never build rows themselves: they call the holder
-  and report the outcome. Exactly one rebuild per change, always in sync.
-
-  Consequence worth knowing: a REFUSED change (ValueError from the
-  holder) stores nothing, therefore notifies nothing, therefore rebuilds
-  nothing - so the field the user was typing in is still alive and keeps
-  its text. Handlers only have to put the state back (see _commit_field).
-"""
 
 import customtkinter as ctk
 
 from app.core import theme
 from app.services import budget_settings, category_settings
-# Phase 5: the confirmation dialog moved out of this file into
-# app/widgets/ so the Fixed Expenses screen can use the same box instead
-# of a second copy of it. Nothing about its behaviour changed.
+
 from app.widgets.confirm_dialog import ConfirmDialog
 
 # Which palette accent identifies each budget. It now lives next to
