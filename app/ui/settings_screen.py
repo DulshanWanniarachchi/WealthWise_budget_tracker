@@ -1,32 +1,4 @@
-"""
-settings_screen.py - the Budget Settings screen (Phase 3).
 
-Lets the user type their monthly salary and the Needs/Wants/Savings
-percentages, shows what each percentage is worth in rupees WHILE they
-type, and saves the plan into app.services.budget_settings - the shared
-holder that the Dashboard reads from.
-
-Phase 8.1 added a fourth field to the same form: the day the user's
-salary month starts on (a 1-28 dropdown), which is what turns "this
-month" into a salary CYCLE for the Reports screen. It is saved by the
-same Save button - this screen stays one atomic form.
-
-RULES ENFORCED HERE
-  * the three percentages must total exactly 100 %, otherwise a clear
-    inline warning appears and the Save button is disabled - invalid
-    values are never written to the holder
-  * empty / non-numeric / out-of-range input is reported the same way
-    (see _parse_int / _parse_percent: they return False instead of
-    raising, so nothing crashes on what the user typed)
-  * the month start day must be 1-28 - checked here for a friendly
-    message AND again by budget_settings.set_month_start_day(), which
-    is the rule that actually protects the data
-
-CONTRACT WITH main.py (identical to the Dashboard)
-  * every colour / font / spacing / radius comes from app.core.theme
-  * refresh_theme() re-applies the palette to EVERY widget created here,
-    so the sidebar's dark/light switch repaints this screen live
-"""
 
 import customtkinter as ctk
 
@@ -271,7 +243,7 @@ class SettingsScreen(ctk.CTkFrame):
             padx=(0, card_pad), pady=(theme.spacing("md"), card_pad),
         )
 
-        # -- salary-month card (Phase 8.1) --------------------------------
+        # -- salary-month card --------------------------------
         # Which day of the month the user's salary cycle begins on. Same
         # shape as the salary card: caption + helper on the left, the
         # control pinned to the right edge, so the two cards read as one
@@ -387,7 +359,7 @@ class SettingsScreen(ctk.CTkFrame):
             entry.delete(0, "end")
             entry.insert(0, str(percentages[key]))
 
-        # Phase 8.1: the salary-cycle day. CTkOptionMenu takes its value
+        # the salary-cycle day. CTkOptionMenu takes its value
         # as the exact string from its list, so set() it rather than
         # insert() - there is no text cursor to preserve here.
         self._cycle_menu.set(str(budget_settings.get_month_start_day()))
@@ -467,7 +439,7 @@ class SettingsScreen(ctk.CTkFrame):
         if not self._update_from_fields():
             return
 
-        # Phase 8.1 - the salary-cycle day, read and checked BEFORE any
+        # the salary-cycle day, read and checked BEFORE any
         # write so a refusal can never leave the form half-saved. The
         # dropdown only offers legal days, but this screen validates
         # every field first (friendly inline message) exactly like the
