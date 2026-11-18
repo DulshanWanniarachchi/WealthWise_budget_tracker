@@ -1,30 +1,3 @@
-"""
-Budget Tracker - Phase 1 entry point.
-
-Run it with:   python main.py
-
-WHAT THIS FILE DOES (Phase 1 = the shell only)
-  1. Creates the main window ("Budget Tracker", sensible default size).
-  2. Builds a fixed-width sidebar on the left with:
-       - the app brand
-       - navigation buttons (Dashboard, Settings, Categories,
-         Fixed Expenses, Daily Expenses, Reports)
-       - a dark/light switch that re-themes the app live
-       - a status label proving the SQLite connection works
-  3. Builds a content area on the right that shows ONE screen at a time.
-  4. Opens data/budget.db once to prove the connection (no tables yet).
-
-SCREEN SWITCHING - the short version:
-  All screens are created once and live inside `self.content`. show_screen()
-  packs the screen you want and pack_forget()s the rest, then updates the
-  sidebar highlight. Nothing is ever destroyed or rebuilt.
-
-THEMING - the short version:
-  Every colour comes from app/core/theme.py. Flipping the switch updates the
-  active palette there, tells CustomTkinter to switch its own defaults, and
-  then calls refresh_theme() on the shell (sidebar) and on each screen, so
-  every explicitly-coloured widget is re-painted immediately.
-"""
 
 import ctypes
 import sqlite3  # imported only so we can catch sqlite3.Error in the startup check
@@ -35,16 +8,13 @@ import tkinter as tk
 from app.core import db, theme
 from app.ui.dashboard_screen import DashboardScreen
 from app.ui.settings_screen import SettingsScreen
-# Phase 4: the Categories screen. Import order follows the sidebar order.
+
 from app.ui.categories_screen import CategoriesScreen
-# Phase 5: the Fixed Expenses screen.
+
 from app.ui.fixed_expenses_screen import FixedExpensesScreen
-# Phase 6: the Daily Expenses screen - the log/edit/delete flow the
-# Dashboard's "Add Expense" button opens.
+
 from app.ui.daily_expenses_screen import DailyExpensesScreen
-# Phase 8: the Reports screen - charts over the data every other screen
-# has already collected. Read-only, so it is added last in the sidebar
-# order too.
+
 from app.ui.reports_screen import ReportsScreen
 from pathlib import Path
 
@@ -169,8 +139,6 @@ class BudgetTrackerApp(ctk.CTk):
             "categories": CategoriesScreen(self.content),
             "fixed": FixedExpensesScreen(self.content),
             "daily": DailyExpensesScreen(self.content),
-            # Phase 8: reports. No callbacks to hand over - it only ever
-            # reads the holders, so it needs nothing from the shell.
             "reports": ReportsScreen(self.content),
         }
 
@@ -199,17 +167,6 @@ class BudgetTrackerApp(ctk.CTk):
         self.sidebar.grid(row=0, column=0, sticky="nsew")
         self.sidebar.grid_propagate(False)  # keep the fixed width regardless of content
 
-        # Single column. Row 8 is an EMPTY spacer row with weight 1, so it
-        # absorbs all leftover height and pushes the appearance section and
-        # the status label down to the bottom of the sidebar.
-        #   rows: 0-1 brand | 2-7 nav buttons | 8 spacer | 9-11 bottom section
-        # Phase 6 note: every row below the nav moved DOWN BY ONE each time
-        # the nav gained a button (spacer 6->7, appearance 7->8, switch
-        # 8->9, status 9->10, bottom padding 10->11 - that was the fifth
-        # button, on row 6).
-        # Phase 8: moved DOWN BY ONE again (spacer 7->8, appearance 8->9,
-        # switch 9->10, status 10->11, bottom padding 11->12) because the
-        # nav gained a SIXTH button, which occupies row 7.
         self.sidebar.grid_columnconfigure(0, weight=1)
         self.sidebar.grid_rowconfigure(8, weight=1)
 
@@ -239,8 +196,7 @@ class BudgetTrackerApp(ctk.CTk):
         # --- navigation buttons --------------------------------------------
         # Each button remembers its screen key in a dict for later re-theming.
         self._nav_buttons: dict = {}
-        # Phase 8: Reports is appended last - it summarises what the
-        # other screens recorded, so it belongs at the end of the flow.
+        
         nav_items = [("dashboard", "Dashboard"), ("settings", "Settings"),
                      ("categories", "Categories"), ("fixed", "Fixed Expenses"),
                      ("daily", "Daily Expenses"), ("reports", "Reports")]
@@ -273,8 +229,7 @@ class BudgetTrackerApp(ctk.CTk):
             font=theme.font("caption"),
             anchor="w",
         )
-        # Phase 8 note: row 9 (instead of 8) because the nav gained a
-        # sixth button, which now occupies row 7 - see the row map above.
+        .
         self._appearance_caption.grid(
             row=9, column=0, sticky="ew",
             padx=pad_lg, pady=(0, theme.spacing("sm")),
